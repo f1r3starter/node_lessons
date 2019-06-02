@@ -7,7 +7,7 @@ class TimersManager {
             ['name', name => !this.timers.some(timer => timer.name === name), 'Timer with the same name already exists'],
             ['delay', delay => typeof delay === 'number' , 'Timer delay should be a number'],
             ['delay', delay => delay > 0, 'Timer delay could not be less than 0 ms'],
-            ['delay', delay => delay < 5000, 'Timer delay could not be bigger than 5000 ms'],
+            ['delay', delay => delay <= 5000, 'Timer delay could not be bigger than 5000 ms'],
             ['interval', interval => typeof interval === 'boolean', 'Timer interval should be boolean'],
             ['job', job => typeof job === 'function', 'Timer job should be a function'],
         ]
@@ -41,6 +41,7 @@ class TimersManager {
 
     pause() {
 
+        return {id: timerId, ...timer};
     }
 
     resume() {
