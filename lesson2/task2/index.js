@@ -1,11 +1,12 @@
 class TimersManager {
     constructor() {
         this.timers = [];
+        this.logs = [];
         this.timerValidator = [
             ['name', name => typeof name === 'string', 'Timer name should be a string'],
             ['name', name => name !== '', 'Timer name could not be empty'],
             ['name', name => !this.timers.some(timer => timer.name === name), 'Timer with the same name already exists'],
-            ['delay', delay => typeof delay === 'number', 'Timer delay should be a number'],
+            ['delay', delay => typeof delay === 'number' , 'Timer delay should be a number'],
             ['delay', delay => delay > 0, 'Timer delay could not be less than 0 ms'],
             ['delay', delay => delay <= 5000, 'Timer delay could not be bigger than 5000 ms'],
             ['interval', interval => typeof interval === 'boolean', 'Timer interval should be boolean'],
@@ -55,9 +56,13 @@ class TimersManager {
 
     resume(timerName) {
         const timer = this._findTimer(timerName);
-        const timerId = timer.interval ? setInterval(timer.job, timer.delay, ...timer.timerArgs) : setTimeout(timer.job, timer.delay, ...timer.timerArgs);
+        const timerId = timer.interval ? setInterval(TimersManager._log, timer.delay, this.logs, timer) : setTimeout(TimersManager._log, timer.delay, this.logs, timer);
 
         return {id: timerId, ...timer};
+    }
+
+    print() {
+        console.log(this.logs);
     }
 
     _findTimer(timerName) {
@@ -68,6 +73,15 @@ class TimersManager {
 
         return timer;
     }
+
+    static _log(log, timer) {
+        log.push({
+            name: timer.name,
+            in: timer.timerArgs,
+            out: timer.job(...timer.timerArgs),
+            created: new Date().toJSON(),
+        });
+    }
 }
 
 
@@ -75,22 +89,19 @@ const manager = new TimersManager();
 
 const t1 = {
     name: 't1',
-    delay: 1000,
-    interval: false,
-    job: () => {
-        console.log('t1')
-    }
+    delay: 3000,
+    interval: true,
+    job: () => { console.log(123) }
 };
 
 const t2 = {
     name: 't2',
-    delay: 5000,
+    delay: 1,
     interval: false,
-    job: (a, b) => console.log(a + b)
+    job: (a, b) => a + b
 };
 
 manager.add(t1);
 manager.add(t2, 1, 2);
 manager.start();
-console.log(1);
-manager.pause('t1');
+manager.print();
