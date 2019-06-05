@@ -1,7 +1,25 @@
 const EventEmitter = require('events');
 
 class Bank extends EventEmitter {
+    constructor() {
+        super();
+        this.customers = [];
+    }
 
+    register(customer) {
+        Bank._validateCustomer(customer);
+        this.customers.push(customer);
+    }
+
+    static _validateCustomer(customer) {
+        if (typeof customer.name !== 'string' || customer.name === '') {
+            throw new Error('Customers name cannot be empty');
+        }
+
+        if (typeof customer.balance !== 'number') {
+            throw new Error('Customers balance should be a number');
+        }
+    }
 }
 
 const bank = new Bank();
