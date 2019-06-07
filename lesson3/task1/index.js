@@ -6,18 +6,17 @@ class Bank extends EventEmitter {
         this.customers = [];
     }
 
-    register(customer) {
-        Bank._validateCustomer(customer);
-        this.customers.push(customer);
+    register(bank) {
+        Bank._validateBank(bank);
     }
 
     static _validateCustomer(customer) {
         if (typeof customer.name !== 'string' || customer.name === '') {
-            throw new Error('Customers name cannot be empty');
+            throw new Error('Bank name cannot be empty');
         }
 
         if (typeof customer.balance !== 'number') {
-            throw new Error('Customers balance should be a number');
+            throw new Error('Bank balance should be a number');
         }
     }
 }
