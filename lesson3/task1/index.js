@@ -20,10 +20,8 @@ class Bank extends EventEmitter {
     register(customer) {
         this._validateName(customer.name);
         this._validateTransactionSum(customer.balance);
-        customer.id = this.idGenerator.generate();
-        this.customers.push(customer);
 
-        return customer.id;
+        return this._addCustomer(customer);
     }
 
     static onError(error) {
@@ -37,31 +35,38 @@ class Bank extends EventEmitter {
         this.on('error', Bank.onError);
     }
 
-    _onAdd(personId, sum) {
-        this._validatePersonId(personId);
+    _onAdd(customerId, sum) {
+        this._validateCustomerId(customerId);
         this._validateTransactionSum(sum);
-        this._updateBalance(personId, sum);
+        this._updateBalance(customerId, sum);
     }
 
-    _onGet(personId, callback) {
-        this._validatePersonId(personId);
-        callback(this._findPerson(personId).balance);
+    _onGet(customerId, callback) {
+        this._validateCustomerId(customerId);
+        callback(this._findCustomer(customerId).balance);
     }
 
-    _onWithdraw(personId, withDrawSum) {
-        this._validatePersonId(personId);
+    _onWithdraw(customerId, withDrawSum) {
+        this._validateCustomerId(customerId);
         this._validateTransactionSum(withDrawSum);
-        this._validateTransactionSum(this._findPerson(personId).balance - withDrawSum);
-        this._updateBalance(personId, -withDrawSum);
+        this._validateTransactionSum(this._findCustomer(customerId).balance - withDrawSum);
+        this._updateBalance(customerId, -withDrawSum);
     }
 
-    _findPerson(personId) {
-        return this.customers.find(customer => customer.id === personId);
+    _addCustomer(customer) {
+        customer.id = this.idGenerator.generate();
+        this.customers.push(customer);
+
+        return customer.id;
     }
 
-    _updateBalance(personId, diff) {
+    _findCustomer(customerId) {
+        return this.customers.find(customer => customer.id === customerId);
+    }
+
+    _updateBalance(customerId, diff) {
         this.customers = this.customers.map(
-            customer => customer.id === personId
+            customer => customer.id === customerId
                 ? {...customer, balance: customer.balance + diff}
                 : customer
         );
@@ -77,8 +82,8 @@ class Bank extends EventEmitter {
         }
     }
 
-    _validatePersonId(personId) {
-        if (!this.customers.some(customer => customer.id === personId)) {
+    _validateCustomerId(customerId) {
+        if (!this.customers.some(customer => customer.id === customerId)) {
             this.emit('error', 'Customer does not exist');
         }
     }
@@ -91,15 +96,15 @@ class Bank extends EventEmitter {
 }
 
 const bank = new Bank();
-const personId = bank.register({
+const customerId = bank.register({
     name: 'Pitter Black',
     balance: 100
 });
-bank.emit('add', personId, 20);
-bank.emit('get', personId, (balance) => {
+bank.emit('add', customerId, 20);
+bank.emit('get', customerId, (balance) => {
     console.log(`I have ${balance}₴`); // I have 120₴
 });
-bank.emit('withdraw', personId, 50);
-bank.emit('get', personId, (balance) => {
+bank.emit('withdraw', customerId, 50);
+bank.emit('get', customerId, (balance) => {
     console.log(`I have ${balance}₴`); // I have 70₴
 });
