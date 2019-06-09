@@ -21,9 +21,7 @@ class CustomerValidator {
                 if (scalarValidationError) {
                     return scalarValidationError;
                 }
-            }
-
-            if (value === '') {
+            } else if (typeof value === 'string' && value === '') {
                 return `Field '${key}' cannot be empty`;
             }
         }
