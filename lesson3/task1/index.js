@@ -17,15 +17,15 @@ class Bank extends EventEmitter {
         this._init();
     }
 
-    register(customer) {
-        this._validateName(customer.name);
-        this._validateTransactionSum(customer.balance);
-
-        return this._addCustomer(customer);
-    }
-
     static onError(error) {
         throw new Error('Something went wrong: ' + error);
+    }
+
+    register(customer) {
+        this._validateName(customer.name);
+        this._validateTransactionAmount(customer.balance, 'balance');
+
+        return this._addCustomer(customer);
     }
 
     _init() {
@@ -35,10 +35,10 @@ class Bank extends EventEmitter {
         this.on('error', Bank.onError);
     }
 
-    _onAdd(customerId, sum) {
+    _onAdd(customerId, amount) {
         this._validateCustomerId(customerId);
-        this._validateTransactionSum(sum);
-        this._updateBalance(customerId, sum);
+        this._validateTransactionAmount(amount);
+        this._updateBalance(customerId, amount);
     }
 
     _onGet(customerId, callback) {
@@ -48,8 +48,8 @@ class Bank extends EventEmitter {
 
     _onWithdraw(customerId, withDrawSum) {
         this._validateCustomerId(customerId);
-        this._validateTransactionSum(withDrawSum);
-        this._validateTransactionSum(this._findCustomer(customerId).balance - withDrawSum);
+        this._validateTransactionAmount(withDrawSum);
+        this._validateTransactionAmount(this._findCustomer(customerId).balance - withDrawSum, 'balance');
         this._updateBalance(customerId, -withDrawSum);
     }
 
@@ -88,9 +88,9 @@ class Bank extends EventEmitter {
         }
     }
 
-    _validateTransactionSum(transactionSum) {
-        if (typeof transactionSum !== 'number' || transactionSum <= 0) {
-            this.emit('error', 'Transaction cannot be done with incorrect sum');
+    _validateTransactionAmount(amount, type = 'transaction') {
+        if (typeof amount !== 'number' || amount <= 0) {
+            this.emit('error', `Operation cannot be done with incorrect or negative amount in your ${type}`);
         }
     }
 }
