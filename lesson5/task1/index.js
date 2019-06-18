@@ -1,4 +1,5 @@
 const { Readable, Writable, Transform } = require('stream');
+const crypto = require('crypto');
 
 class CustomerValidator {
     constructor(allowedFields = null) {
@@ -24,22 +25,50 @@ class CustomerValidator {
     }
 }
 
+class Cipherer {
+    constructor(password = 'random_pass',
+                salt = 'random_salt',
+                inputEnc = 'utf8',
+                outputEnc = 'hex',
+                algorithm = 'aes192'
+    ) {
+        this.key = crypto.scryptSync(password, salt, 24);
+        this.inputEnc = inputEnc;
+        this.outputEnc = outputEnc;
+        this.algorithm = algorithm;
+        this.iv = crypto.randomFillSync(Buffer.alloc(16), 10);
+    }
+
+    cipher(data) {
+        const cipher = crypto.createCipheriv(this.algorithm, this.key, this.iv);
+
+        cipher.update(data, this.inputEnc, this.outputEnc);
+        return cipher.final(this.outputEnc);
+    }
+
+    decipher(data) {
+        const decipher = crypto.createDecipheriv(this.algorithm, this.key, this.iv);
+
+        decipher.update(data, this.outputEnc, this.inputEnc);
+        return decipher.final(this.inputEnc);
+    }
+}
+
 class UI extends Readable {
     constructor(customers, validator = null, options = {}) {
         super(options);
+        validator = validator || new CustomerValidator();
+        customers.map(customer => validator.isInvalid(customer))
+            .filter(Boolean)
+            .forEach(validationError => this.emit('error', validationError));
         this.customers = customers;
-        this.validator = validator || new CustomerValidator();
     }
 
     _read() {
-        let customer = this.customers.shift();
+        const customer = this.customers.shift();
         if (!customer) {
             this.push(null);
         } else {
-            const validationError = this.validator.isInvalid(customer);
-            if (validationError) {
-                this.emit('error', validationError);
-            }
             this.push(JSON.stringify(customer));
         }
     }
@@ -48,8 +77,9 @@ class UI extends Readable {
 }
 
 class Guardian extends Transform {
-    constructor(validator = null, options = {}) {
+    constructor(cipherer = null, validator = null, options = {}) {
         super(options);
+        this.cipherer = cipherer || new Cipherer();
         this.validator = validator || new CustomerValidator();
         this.pipeSource = null;
         this.on('pipe', this.onPipe);
@@ -71,22 +101,24 @@ class Guardian extends Transform {
     }
 
     _createGuardedObject(customer) {
+        console.log(this.cipherer);
         return {
             meta: {
                 source: this.pipeSource,
             },
             payload: {
                 ...customer,
-                email:    Buffer.from(customer.email).toString('hex'),
-                password: Buffer.from(customer.password).toString('hex'),
+                email:    this.cipherer.cipher(customer.email),
+                password: this.cipherer.cipher(customer.password),
             }
         };
     }
 }
 
 class AccountManager extends Writable {
-    constructor(validator, options) {
+    constructor(cipherer = null, validator = null, options) {
         super(options);
+        this.cipherer = cipherer || new Cipherer();
         this.validator = validator || new CustomerValidator();
         this.accounts = [];
     }
@@ -97,15 +129,28 @@ class AccountManager extends Writable {
     }
 
     _addAccount(account) {
-        const validationError = this.validator.isInvalid(account.payload);
+        const accountData = account.payload;
+        const validationError = this.validator.isInvalid(accountData);
         if (validationError) {
             this.emit('error', validationError);
         }
 
-        this.accounts.push(account);
-        console.log(account.payload);
+        const customer = this._decipherCustomer(accountData);
+        this.accounts.push(customer);
+
+    }
+
+    _decipherCustomer(account) {
+        console.log(this.cipherer);
+        return {
+            ...account,
+            email:    this.cipherer.decipher(account.email),
+            password: this.cipherer.decipher(account.password),
+        }
     }
 }
+
+const cipherer = new Cipherer();
 
 const customers = [
     {
@@ -120,6 +165,6 @@ const customers = [
     }
 ];
 const ui = new UI(customers);
-const guardian = new Guardian();
-const manager = new AccountManager();
+const guardian = new Guardian(cipherer);
+const manager = new AccountManager(cipherer);
 ui.pipe(guardian).pipe(manager);
