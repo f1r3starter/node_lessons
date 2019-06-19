@@ -41,16 +41,16 @@ class Cipherer {
 
     cipher(data) {
         const cipher = crypto.createCipheriv(this.algorithm, this.key, this.iv);
+        const cipheredData = cipher.update(data, this.inputEnc, this.outputEnc);
 
-        cipher.update(data, this.inputEnc, this.outputEnc);
-        return cipher.final(this.outputEnc);
+        return cipheredData + cipher.final(this.outputEnc);
     }
 
     decipher(data) {
         const decipher = crypto.createDecipheriv(this.algorithm, this.key, this.iv);
+        const decipheredData = decipher.update(data, this.outputEnc, this.inputEnc);
 
-        decipher.update(data, this.outputEnc, this.inputEnc);
-        return decipher.final(this.inputEnc);
+        return decipheredData + decipher.final(this.inputEnc);
     }
 }
 
