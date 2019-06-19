@@ -101,14 +101,13 @@ class Guardian extends Transform {
     }
 
     _createGuardedObject(customer) {
-        console.log(this.cipherer);
         return {
             meta: {
                 source: this.pipeSource,
             },
             payload: {
                 ...customer,
-                email:    this.cipherer.cipher(customer.email),
+                email: this.cipherer.cipher(customer.email),
                 password: this.cipherer.cipher(customer.password),
             }
         };
@@ -128,8 +127,7 @@ class AccountManager extends Writable {
         done();
     }
 
-    _addAccount(account) {
-        const accountData = account.payload;
+    _addAccount({ payload: accountData }) {
         const validationError = this.validator.isInvalid(accountData);
         if (validationError) {
             this.emit('error', validationError);
@@ -137,11 +135,9 @@ class AccountManager extends Writable {
 
         const customer = this._decipherCustomer(accountData);
         this.accounts.push(customer);
-
     }
 
     _decipherCustomer(account) {
-        console.log(this.cipherer);
         return {
             ...account,
             email:    this.cipherer.decipher(account.email),
