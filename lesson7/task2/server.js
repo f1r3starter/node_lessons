@@ -1,7 +1,8 @@
 const net = require('net');
 const fs = require('fs');
 const path = require('path');
-
+const zlib = require('zlib');
+const { Readable, Transform, PassThrough } = require('stream');
 
 class RequestValidator {
     constructor(allowedStructure = null) {
@@ -52,6 +53,26 @@ class RequestValidator {
     }
 }
 
+class SocketRead extends Readable {
+    constructor(data, validator = null, options = {}) {
+        super(options);
+        this.data = data;
+        this.validator = validator || new RequestValidator();
+    }
+
+    _read() {
+        if (!this.data) {
+            this.push(null);
+        } else {
+            const validationError =  this.validator.isInvalid(this.data);
+            if (validationError) {
+                this.emit('error', validationError);
+            }
+            this.push(JSON.stringify(this.data));
+        }
+    }
+}
+
 class EntriesFilter {
     constructor(entries = []) {
         this.entries = entries;
@@ -68,17 +89,48 @@ class EntriesFilter {
     }
 }
 
-const data = fs.readFileSync(path.join(__dirname, 'users.json'));
+class Converter extends Transform {
+    constructor(entriesFilter, type = 'json', delimiter = ';', options = {}) {
+        super(options);
+        this._validateType(type);
+        this.type = type;
+        this.entriesFilter = entriesFilter;
+        this.delimiter = delimiter;
+    }
+
+    _transform(chunk, encoding, done) {
+        const requestData = JSON.parse(chunk.toString());
+        const entries = this.entriesFilter.filter(requestData.filter);
+        const data = this.type === 'json' ? JSON.stringify(entries)
+            : entries.map(line => this._convertToCsv(line)).join("\r\n");
+
+        this.push(data);
+
+        done();
+    }
+
+    _convertToCsv(jsonData) {
+        return Object.values(
+            Object.fromEntries(
+                Object.entries(jsonData)
+                    .filter(([key]) => this.fieldsToSave.includes(key))
+            )
+        ).map(data => JSON.stringify(data)).join(this.delimiter);
+    }
+
+    _validateType(type) {
+        if (['json', 'csv'].indexOf(type) === -1) {
+            throw new Error('Unknown type');
+        }
+    }
+}
+
+const data = fs.readFileSync(path.join(__dirname, 'users.json')).toString();
 const entryFilter = new EntriesFilter(JSON.parse(data));
 const validator = new RequestValidator();
-
 const server = net.createServer();
 
 server.on('connection', socket => {
-    console.log('New client connected!');
-
-    socket.write('Welcome a board!\n');
-
     socket.on('data', msg => {
         const requestData = JSON.parse(msg.toString());
         const error = validator.isInvalid(requestData);
@@ -86,9 +138,11 @@ server.on('connection', socket => {
         if (error) {
             socket.write(`You have send an invalid request:` + error);
         } else {
-            const dataToSend = entryFilter.filter(requestData);
+            const converter = new Converter(entryFilter, requestData.meta.format);
+            const socketReader = new SocketRead(requestData);
+            const archiver = requestData.meta.archive ? zlib.createGzip() : new PassThrough();
 
-            socket.write(JSON.stringify(dataToSend));
+            socketReader.pipe(converter).pipe(archiver).pipe(socket);
         }
     });
 });
