@@ -68,10 +68,6 @@ const validator = new RequestValidator();
 const server = net.createServer();
 
 server.on('connection', socket => {
-    console.log('New client connected!');
-
-    socket.write('Welcome a board!\n');
-
     socket.on('data', msg => {
         const requestData = JSON.parse(msg.toString());
         const error = validator.isInvalid(requestData);
