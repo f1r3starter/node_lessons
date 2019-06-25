@@ -1,10 +1,24 @@
 const { Bank } = require('./');
 
-jest.mock('events');
+describe('Test Bank:', () => {
+    jest.mock('events');
+    const newBank = new Bank();
+    const customer = {name: 'petya', amount: 100};
+    const customerId = newBank.register(customer);
 
-describe('Test promise function:', () => {
-    const newBank = () => new Bank();
-    test('test async getData', async () => {
-        expect(newBank()._enroll('vasya', -100)).toBe('success');
+    test('test new client registered', async () => {
+        expect(typeof customerId).toBe('number');
+    });
+
+    test('test client exists', async () => {
+        expect(() => newBank.register(customer)).toThrow(`duplicated customer for name: '${customer.name}'`);
+    });
+
+    test('test amount should be grater than 0', async () => {
+        expect(() => newBank.emit('add', 666, -1)).toThrow(`amount should be grater than 0`);
+    });
+
+    test('test amount should be grater than 0', async () => {
+        expect(() => newBank.emit('add', 666, -1)).toThrow(`amount should be grater than 0`);
     });
 });

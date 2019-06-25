@@ -1,7 +1,9 @@
 const events = jest.genMockFromModule('events');
 
-events.emit = (event, cb) => {
-    throw new Error(event);
-};
+events.emit = jest.fn((event, data) => {
+    if (event === 'error') {
+        throw data;
+    }
+});
 
 module.exports = events;
