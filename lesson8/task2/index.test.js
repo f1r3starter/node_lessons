@@ -14,11 +14,15 @@ describe('Test Bank:', () => {
         expect(() => newBank.register(customer)).toThrow(`duplicated customer for name: '${customer.name}'`);
     });
 
-    test('test amount should be grater than 0', async () => {
+    test('test amount should be greater than 0', async () => {
         expect(() => newBank.emit('add', 666, -1)).toThrow(`amount should be grater than 0`);
     });
 
-    test('test amount should be grater than 0', async () => {
-        expect(() => newBank.emit('add', 666, -1)).toThrow(`amount should be grater than 0`);
+    test('test consumer with id not found', async () => {
+        expect(() => newBank.emit('add', 666, 1)).toThrow(`customer with id '666' not found`);
+    });
+
+    test('test success enroll', async () => {
+        expect(newBank.emit('add', customerId, 1)).toBeTruthy();
     });
 });
