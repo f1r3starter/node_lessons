@@ -5,7 +5,19 @@ services:
     image: mongo
     restart: always
     environment:
-      MONGO_INITDB_ROOT_USERNAME: test
-      MONGO_INITDB_ROOT_PASSWORD: test
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_LOGIN}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
     volumes:
       - ./:/var/www
+  mongo_loader:
+    image: mongo
+    environment:
+      MONGO_LOGIN: ${MONGO_LOGIN}
+      MONGO_PASSWORD: ${MONGO_PASSWORD}
+      TASK_FILE: ${TASK_FILE}
+    links:
+      - mongo
+    volumes:
+      - ./tasks:/tasks:z
+    command:
+      /tasks/task.sh
