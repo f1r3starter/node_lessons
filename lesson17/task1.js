@@ -11,12 +11,12 @@ db.customers.aggregate([
         "$project": {
             "fName": "$name.first",
             "lName": "$name.last",
-            "orders._id": 1,
-            "orders.count": 1,
-            "orders.price": 1,
-            "orders.discount": 1,
-            "orders.product": 1,
-            "_id": 0
+            "orders._id": true,
+            "orders.count": true,
+            "orders.price": true,
+            "orders.discount": true,
+            "orders.product": true,
+            "_id": false
         }
     }
-    ])
+    ]).pretty()
