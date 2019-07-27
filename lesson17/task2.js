@@ -8,12 +8,10 @@ db.customers.aggregate([
         }
     },
     {
-        "$project": {
-            "fName": "$name.first",
-            "lName": "$name.last",
-            "orders._id": 1,
-            "orders.count": 1,
-            "_id": 0
-        }
+        $group:
+            {
+                _id: "$_id._id",
+                counter: { "$sum": 1}
+            }
     }
-])
+]).pretty()
