@@ -1,17 +1,48 @@
-db.customers.aggregate([
+db.orders.aggregate([
     {
-        "$lookup": {
-            "from": "orders",
-            "localField": "_id",
-            "foreignField": "customerId",
-            "as": "orders"
+        $group:
+            {
+                _id: {
+                    product: '$product',
+                    customerId: '$customerId'
+                },
+                total: {
+                    $sum: 1
+                }
+            }
+    },
+    {
+        '$lookup': {
+            'from': 'customers',
+            'localField': '_id.customerId',
+            'foreignField': '_id',
+            'as': 'customer'
         }
     },
     {
         $group:
             {
-                _id: "$_id._id",
-                counter: { "$sum": 1}
+                _id: {
+                    customerId: '$_id.customerId'
+                },
+                fName: { $first: '$customer.name.first' },
+                lName: { $first: '$customer.name.last' },
+                orders: {
+                    $push: {
+                        '_id': '$_id.product',
+                        'total': '$total'
+                    },
+                }
             }
+    },
+    {
+        $sort: {
+            '_id.customerId': 1
+        }
+    },
+    {
+        '$project': {
+           '_id': false
+        }
     }
 ]).pretty()
