@@ -2,6 +2,7 @@ db.customers.drop();
 db.orders.drop();
 
 const randomNum = (min, max) => Math.floor(min + Math.random()*(max + 1 - min));
+const randomString = () => Math.random().toString(36).substring(2, 7) + Math.random().toString(36).substring(2, 7);
 const customers = [];
 
 for (let i = 0; i < 3000; i++) {
@@ -10,6 +11,9 @@ for (let i = 0; i < 3000; i++) {
             first: 'some first name',
             last: 'some last name'
         },
+        nickname: randomString(),
+        email: randomString() + '@gmail.com',
+        password: randomString(),
         balance: randomNum(10000, 15000),
         created: new Date()
     })
