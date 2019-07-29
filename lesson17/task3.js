@@ -1,5 +1,5 @@
-const size = 3
-const pages = Math.ceil(db.customers.countDocuments({}) / size); // 3.1 // 4
+const size = 3;
+const pages = Math.ceil(db.customers.countDocuments({}) / size);
 
 for (let page = 0; page < pages; page++) {
     const cursor = db.orders.aggregate([
@@ -49,10 +49,12 @@ for (let page = 0; page < pages; page++) {
                 '_id': false
             }
         },
-        { '$facet'    : {
-                metadata: [ { $count: "total" }, { $addFields: { page: page + 1 } } ],
+        {
+            '$facet': {
+                metadata: [{ $count: "total" }, { $addFields: { page: page + 1 } }],
                 data: [ { $skip: page * size }, { $limit: size } ] // add projection here wish you re-shape the docs
-            } }
+            }
+        }
     ]);
 
     print(tojson(cursor.toArray()));
