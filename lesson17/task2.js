@@ -42,7 +42,7 @@ db.orders.aggregate([
     },
     {
         '$project': {
-           '_id': false
+            '_id': false
         }
     }
 ]).pretty()
